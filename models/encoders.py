@@ -12,6 +12,9 @@ from layers.layers import GraphConvolution, Linear, get_dim_act
 import utils.math_utils as pmath
 
 
+from torch_geometric.nn import SAGEConv
+
+
 class Encoder(nn.Module):
     """
     Encoder abstract class.
@@ -140,6 +143,24 @@ class GAT(Encoder):
             gat_layers.append(
                     GraphAttentionLayer(in_dim, out_dim, args.dropout, act, args.alpha, args.n_heads, concat))
         self.layers = nn.Sequential(*gat_layers)
+        self.encode_graph = True
+
+
+class GraphSAGE(Encoder):
+    """
+    GraphSAGE Networks.
+    """
+
+    def __init__(self, c, args):
+        super(GraphSAGE, self).__init__(c)
+        assert args.num_layers > 0
+        dims, acts = get_dim_act(args)
+        gc_layers = []
+        for i in range(len(dims) - 1):
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            gc_layers.append(SAGEConv(in_dim, out_dim, feat_drop=args.dropout, activation=act, bias=args.bias))
+        self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 
 

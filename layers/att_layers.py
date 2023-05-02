@@ -137,9 +137,9 @@ class SpGraphAttentionV2Layer(nn.Module):
         dropout,
         alpha,
         activation,
-        share_weights=False,
+        share_weights=True,
     ):
-        super(SpGraphAttentionLayer, self).__init__()
+        super(SpGraphAttentionV2Layer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.alpha = alpha
@@ -175,7 +175,7 @@ class SpGraphAttentionV2Layer(nn.Module):
         edge_h = (h[edge[1, :], :] + h[edge[0, :], :]).t()
         # edge: D x E
 
-        edge_e = torch.exp(-self.a.mm(self.leakyrelu(edge_h.squeeze())))
+        edge_e = torch.exp(-self.a.mm(self.leakyrelu(edge_h)).squeeze())
         assert not torch.isnan(edge_e).any()
         # edge_e: E
 
@@ -211,7 +211,7 @@ class GraphAttentionLayer(nn.Module):
         alpha,
         nheads,
         concat,
-        v2=False,
+        v2=True,
     ):
         """Sparse version of GAT."""
         super(GraphAttentionLayer, self).__init__()
