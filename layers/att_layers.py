@@ -79,6 +79,14 @@ class SpGraphAttentionLayer(nn.Module):
         self.special_spmm = SpecialSpmm()
         self.act = activation
 
+        # self.linear_l = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
+
+        # if share_weights:
+        #     self.linear_r = self.linear_l
+        # else:
+        #     self.linear_r] = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
+
+
     def forward(self, input, adj):
         N = input.size()[0]
         edge = adj._indices()
@@ -117,17 +125,110 @@ class SpGraphAttentionLayer(nn.Module):
         return self.__class__.__name__ + ' (' + str(self.in_features) + ' -> ' + str(self.out_features) + ')'
 
 
+class SpGraphAttentionV2Layer(nn.Module):
+    """
+    Sparse version GATv2 layer
+    """
+
+    def __init__(
+        self,
+        in_features,
+        out_features,
+        dropout,
+        alpha,
+        activation,
+        share_weights=False,
+    ):
+        super(SpGraphAttentionLayer, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.alpha = alpha
+
+        self.W = nn.Parameter(torch.zeros(size=(in_features, out_features)))
+        nn.init.xavier_normal_(self.W.data, gain=1.414)
+
+        self.a = nn.Parameter(torch.zeros(size=(1, out_features)))
+        nn.init.xavier_normal_(self.a.data, gain=1.414)
+
+        self.dropout = nn.Dropout(dropout)
+        self.leakyrelu = nn.LeakyReLU(self.alpha)
+        self.special_spmm = SpecialSpmm()
+        self.act = activation
+
+        if share_weights:
+            self.W_r = self.W
+        else:
+            self.W_r = nn.Parameter(torch.zeros(size=(in_features, out_features)))
+            nn.init.xavier_normal_(self.W.data, gain=1.414)
+
+    def forward(self, input, adj):
+        N = input.size()[0]
+        edge = adj._indices()
+
+        h = torch.mm(input, self.W)
+        h_r = torch.mm(input, self.W_r)
+        # h: N x out
+        assert not torch.isnan(h).any()
+
+        # Self-attention on the nodes - Shared attention mechanism
+        # edge_h = torch.cat((h[edge[0, :], :], h[edge[1, :], :]), dim=1).t()
+        edge_h = (h[edge[1, :], :] + h[edge[0, :], :]).t()
+        # edge: D x E
+
+        edge_e = torch.exp(-self.a.mm(self.leakyrelu(edge_h.squeeze())))
+        assert not torch.isnan(edge_e).any()
+        # edge_e: E
+
+        ones = torch.ones(size=(N, 1))
+        if h.is_cuda:
+            ones = ones.cuda()
+        e_rowsum = self.special_spmm(edge, edge_e, torch.Size([N, N]), ones)
+        # e_rowsum: N x 1
+
+        edge_e = self.dropout(edge_e)
+        # edge_e: E
+
+        h_prime = self.special_spmm(edge, edge_e, torch.Size([N, N]), h)
+        assert not torch.isnan(h_prime).any()
+        # h_prime: N x out
+
+        h_prime = h_prime.div(e_rowsum)
+        # h_prime: N x out
+        assert not torch.isnan(h_prime).any()
+        return self.act(h_prime)
+
+    def __repr__(self):
+        return self.__class__.__name__ + ' (' + str(self.in_features) + ' -> ' + str(self.out_features) + ')'
+
+
 class GraphAttentionLayer(nn.Module):
-    def __init__(self, input_dim, output_dim, dropout, activation, alpha, nheads, concat):
+    def __init__(
+        self,
+        input_dim,
+        output_dim,
+        dropout,
+        activation,
+        alpha,
+        nheads,
+        concat,
+        v2=False,
+    ):
         """Sparse version of GAT."""
         super(GraphAttentionLayer, self).__init__()
         self.dropout = dropout
         self.output_dim = output_dim
-        self.attentions = [SpGraphAttentionLayer(input_dim,
-                                                 output_dim,
-                                                 dropout=dropout,
-                                                 alpha=alpha,
-                                                 activation=activation) for _ in range(nheads)]
+        if v2:
+            self.attentions = [SpGraphAttentionV2Layer(input_dim,
+                                                     output_dim,
+                                                     dropout=dropout,
+                                                     alpha=alpha,
+                                                     activation=activation) for _ in range(nheads)]
+        else:
+            self.attentions = [SpGraphAttentionLayer(input_dim,
+                                                     output_dim,
+                                                     dropout=dropout,
+                                                     alpha=alpha,
+                                                     activation=activation) for _ in range(nheads)]
         self.concat = concat
         for i, attention in enumerate(self.attentions):
             self.add_module('attention_{}'.format(i), attention)
