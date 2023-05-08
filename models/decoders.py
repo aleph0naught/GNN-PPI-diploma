@@ -50,17 +50,6 @@ class GATDecoder(Decoder):
         self.decode_adj = True
 
 
-class SAGEDecoder(Decoder):
-    """
-    GraphSAGE Decoder.
-    """
-
-    def __init__(self, c, args):
-        super(SAGEDecoder, self).__init__(c)
-        self.cls = SAGEConv(args.dim, args.n_classes, feat_drop=args.dropout, activation=F.elu)
-        self.decode_adj = True
-
-
 class LinearDecoder(Decoder):
     """
     MLP Decoder for Hyperbolic/Euclidean node classification models.
@@ -92,6 +81,5 @@ model2decoder = {
     'HGCN': LinearDecoder,
     'MLP': LinearDecoder,
     'Shallow': LinearDecoder,
-    'SAGE': SAGEDecoder,
 }
 

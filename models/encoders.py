@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import manifolds
 from layers.att_layers import GraphAttentionLayer
 import layers.hyp_layers as hyp_layers
-from layers.layers import GraphConvolution, Linear, get_dim_act
+from layers.layers import GraphConvolution, Linear, get_dim_act, SageLayer
 import utils.math_utils as pmath
 
 
@@ -74,6 +74,7 @@ class HNN(Encoder):
     def encode(self, x, adj):
         x_hyp = self.manifold.proj(self.manifold.expmap0(self.manifold.proj_tan0(x, self.c), c=self.c), c=self.c)
         return super(HNN, self).encode(x_hyp, adj)
+
 
 class GCN(Encoder):
     """
@@ -146,20 +147,20 @@ class GAT(Encoder):
         self.encode_graph = True
 
 
-class GraphSAGE(Encoder):
+class SAGE(Encoder):
     """
-    GraphSAGE Networks.
+    Graph Convolution Networks.
     """
 
     def __init__(self, c, args):
-        super(GraphSAGE, self).__init__(c)
+        super(SAGE, self).__init__(c)
         assert args.num_layers > 0
         dims, acts = get_dim_act(args)
         gc_layers = []
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            gc_layers.append(SAGEConv(in_dim, out_dim, feat_drop=args.dropout, activation=act, bias=args.bias))
+            gc_layers.append(GraphConvolution(in_dim, out_dim, args.dropout, act, args.bias))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 
