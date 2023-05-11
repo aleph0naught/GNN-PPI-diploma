@@ -92,13 +92,15 @@ class SageLayer(nn.Module):
     Encodes a node's using 'convolutional' GraphSage approach
     """
 
-    def __init__(self, in_features, out_features, dropout, act, use_bias):
-        super(GraphConvolution, self).__init__()
+    def __init__(self, in_features, out_features, dropout, act, use_bias, first=True):
+        super(SageLayer, self).__init__()
         self.dropout = dropout
-        self.linear = nn.Linear(in_features, out_features, use_bias)
-        self.act = act
         self.in_features = in_features
         self.out_features = out_features
+        if not first:
+            self.in_features += 50
+        self.linear = nn.Linear(self.in_features, self.out_features, use_bias)
+        self.act = act
 
     def forward(self, input):
         x, adj = input
@@ -108,7 +110,7 @@ class SageLayer(nn.Module):
             support = torch.spmm(adj, hidden)
         else:
             support = torch.mm(adj, hidden)
-        support = torch.cat((support, x), dim=0)
+        support = torch.cat((support, x), dim=1)
         output = self.act(support), adj
         return output
 

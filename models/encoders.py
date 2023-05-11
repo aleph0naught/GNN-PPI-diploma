@@ -149,7 +149,7 @@ class GAT(Encoder):
 
 class SAGE(Encoder):
     """
-    Graph Convolution Networks.
+    Graph SAGE Networks.
     """
 
     def __init__(self, c, args):
@@ -160,7 +160,10 @@ class SAGE(Encoder):
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            gc_layers.append(GraphConvolution(in_dim, out_dim, args.dropout, act, args.bias))
+            if i == 0:
+                gc_layers.append(SageLayer(in_dim, out_dim, args.dropout, act, args.bias, first=True))
+            else:
+                gc_layers.append(SageLayer(in_dim, out_dim, args.dropout, act, args.bias, first=False))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 
