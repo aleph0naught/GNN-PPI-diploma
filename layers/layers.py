@@ -94,19 +94,23 @@ class SAGELayer(nn.Module):
     Encodes a node's using torch_geomtrics GraphSage
     """
 
-    def __init__(self, in_features, out_features, dropout, act, bias):
+    def __init__(self, in_features, out_features, dropout, act, bias, last=False):
         super(SAGELayer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.act = act
         self.dropout = dropout
-        self.conv1 = SAGEConv(in_features, out_features, bias=bias)
+        self.last = last
+        self.conv = SAGEConv(in_features, out_features, bias=bias)
 
     def forward(self, input):
         x, adj = input
         edge_index = adj.coalesce().indices()
-        x = self.conv1(x, edge_index)
-        output = F.dropout(self.act(x), self.dropout, training=self.training), adj
+        x = self.conv(x, edge_index)
+        if not self.last:
+            output = F.dropout(self.act(x), self.dropout, training=self.training), adj
+        else:
+            output = x, adj
         return output
 
     def extra_repr(self):
