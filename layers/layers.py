@@ -128,22 +128,20 @@ class SageTorch(nn.Module):
     Encodes a node's using torch_geomtrics GraphSage
     """
 
-    def __init__(self, in_features, out_features, dropout, act, use_bias, first=True):
+    def __init__(self, in_features, out_features, dropout, act, bias, first=True):
         super(SageTorch, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.conv1 = SAGEConv(in_features, out_features, bias=use_bias)
+        self.act = act
+        self.dropout = dropout
+        self.conv1 = SAGEConv(in_features, out_features, bias=bias)
 
     def forward(self, input):
         x, adj = input
-        for i, j in adj:
-            print(i, j)
-        exit(0)
+        edge_index = adj.coalesce().indices()
         x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x)
 
-        output = self.act(support), adj
+        output = F.dropout(self.act(x), self.dropout, training=self.training), adj
         return output
 
     def extra_repr(self):

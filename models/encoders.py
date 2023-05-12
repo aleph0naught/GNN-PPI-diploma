@@ -172,7 +172,7 @@ class EncoderTorch(nn.Module):
     """
 
     def __init__(self, c):
-        super(Encoder, self).__init__()
+        super(EncoderTorch, self).__init__()
         self.c = c
 
     def encode(self, x, adj):
@@ -190,14 +190,14 @@ class TorchSAGE(EncoderTorch):
     """
 
     def __init__(self, c, args):
-        super(SAGE, self).__init__(c)
+        super(TorchSAGE, self).__init__(c)
         assert args.num_layers > 0
         dims, acts = get_dim_act(args)
         gc_layers = []
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            gc_layers.append(SageTorch(in_dim, out_dim, bias=args.bias))
+            gc_layers.append(SageTorch(in_dim, out_dim, args.dropout, act, args.bias))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 
