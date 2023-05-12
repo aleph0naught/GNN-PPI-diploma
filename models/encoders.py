@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import manifolds
 from layers.att_layers import GraphAttentionLayer
 import layers.hyp_layers as hyp_layers
-from layers.layers import GraphConvolution, Linear, get_dim_act, SageLayer, SageTorch
+from layers.layers import GraphConvolution, Linear, get_dim_act, SAGELayer
 import utils.math_utils as pmath
 
 
@@ -145,9 +145,32 @@ class GAT(Encoder):
         self.encode_graph = True
 
 
+class GATv2(Encoder):
+    """
+    Graph Attention Networks V2
+    """
+
+    def __init__(self, c, args):
+        super(GATv2, self).__init__(c)
+        assert args.num_layers > 0
+        dims, acts = get_dim_act(args)
+        gat_layers = []
+        for i in range(len(dims) - 1):
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            assert dims[i + 1] % args.n_heads == 0
+            out_dim = dims[i + 1] // args.n_heads
+            concat = True
+            gat_layers.append(
+                    GraphAttentionLayer(in_dim, out_dim, args.dropout, act, args.alpha, args.n_heads, concat, v2=True))
+        self.layers = nn.Sequential(*gat_layers)
+        self.encode_graph = True
+
+
+
 class SAGE(Encoder):
     """
-    Graph SAGE Networks.
+    Graph SAGE Networks with torch_geometrics
     """
 
     def __init__(self, c, args):
@@ -158,46 +181,7 @@ class SAGE(Encoder):
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            if i == 0:
-                gc_layers.append(SageLayer(in_dim, out_dim, args.dropout, act, args.bias, first=True))
-            else:
-                gc_layers.append(SageLayer(in_dim, out_dim, args.dropout, act, args.bias, first=False))
-        self.layers = nn.Sequential(*gc_layers)
-        self.encode_graph = True
-
-
-class EncoderTorch(nn.Module):
-    """
-    Encoder abstract class for torch_geometrics
-    """
-
-    def __init__(self, c):
-        super(EncoderTorch, self).__init__()
-        self.c = c
-
-    def encode(self, x, adj):
-        if self.encode_graph:
-            input = (x, adj)
-            output, _ = self.layers.forward(input)
-        else:
-            output = self.layers.forward(x)
-        return output
-
-
-class TorchSAGE(EncoderTorch):
-    """
-    Graph SAGE Networks with torch_geometrics
-    """
-
-    def __init__(self, c, args):
-        super(TorchSAGE, self).__init__(c)
-        assert args.num_layers > 0
-        dims, acts = get_dim_act(args)
-        gc_layers = []
-        for i in range(len(dims) - 1):
-            in_dim, out_dim = dims[i], dims[i + 1]
-            act = acts[i]
-            gc_layers.append(SageTorch(in_dim, out_dim, args.dropout, act, args.bias))
+            gc_layers.append(SAGELayer(in_dim, out_dim, args.dropout, act, args.bias))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 

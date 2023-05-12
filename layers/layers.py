@@ -89,47 +89,13 @@ class FermiDiracDecoder(Module):
         return probs
 
 
-class SageLayer(nn.Module):
-    """
-    Encodes a node's using 'convolutional' GraphSage approach
-    """
-
-    def __init__(self, in_features, out_features, dropout, act, use_bias, first=True):
-        super(SageLayer, self).__init__()
-        self.dropout = dropout
-        self.in_features = in_features
-        self.out_features = out_features
-        if not first:
-            self.in_features += 50
-        self.linear = nn.Linear(self.in_features, self.out_features, use_bias)
-        self.act = act
-
-    def forward(self, input):
-        x, adj = input
-        hidden = self.linear.forward(x)
-        hidden = F.dropout(hidden, self.dropout, training=self.training)
-        if adj.is_sparse:
-            support = torch.spmm(adj, hidden)
-        else:
-            support = torch.mm(adj, hidden)
-        print(x.shape, adj.shape, hidden.shape, support.shape)
-        support = torch.cat((support, x), dim=1)
-        output = self.act(support), adj
-        return output
-
-    def extra_repr(self):
-        return 'input_dim={}, output_dim={}'.format(
-                self.in_features, self.out_features
-        )
-
-
-class SageTorch(nn.Module):
+class SAGELayer(nn.Module):
     """
     Encodes a node's using torch_geomtrics GraphSage
     """
 
-    def __init__(self, in_features, out_features, dropout, act, bias, first=True):
-        super(SageTorch, self).__init__()
+    def __init__(self, in_features, out_features, dropout, act, bias):
+        super(SAGELayer, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.act = act
@@ -140,7 +106,6 @@ class SageTorch(nn.Module):
         x, adj = input
         edge_index = adj.coalesce().indices()
         x = self.conv1(x, edge_index)
-
         output = F.dropout(self.act(x), self.dropout, training=self.training), adj
         return output
 

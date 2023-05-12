@@ -211,7 +211,7 @@ class GraphAttentionLayer(nn.Module):
         alpha,
         nheads,
         concat,
-        v2=True,
+        v2=False,
     ):
         """Sparse version of GAT."""
         super(GraphAttentionLayer, self).__init__()
