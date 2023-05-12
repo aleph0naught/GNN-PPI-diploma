@@ -110,6 +110,7 @@ class SageLayer(nn.Module):
             support = torch.spmm(adj, hidden)
         else:
             support = torch.mm(adj, hidden)
+        print(x.shape, adj.shape, support.shape)
         support = torch.cat((support, x), dim=1)
         output = self.act(support), adj
         return output
