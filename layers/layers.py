@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
+from torch_geometric.nn import SAGEConv
+
 
 def get_dim_act(args):
     """
@@ -110,8 +112,37 @@ class SageLayer(nn.Module):
             support = torch.spmm(adj, hidden)
         else:
             support = torch.mm(adj, hidden)
-        print(x.shape, adj.shape, support.shape)
+        print(x.shape, adj.shape, hidden.shape, support.shape)
         support = torch.cat((support, x), dim=1)
+        output = self.act(support), adj
+        return output
+
+    def extra_repr(self):
+        return 'input_dim={}, output_dim={}'.format(
+                self.in_features, self.out_features
+        )
+
+
+class SageTorch(nn.Module):
+    """
+    Encodes a node's using torch_geomtrics GraphSage
+    """
+
+    def __init__(self, in_features, out_features, dropout, act, use_bias, first=True):
+        super(SageTorch, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.conv1 = SAGEConv(in_features, out_features, bias=use_bias)
+
+    def forward(self, input):
+        x, adj = input
+        for i, j in adj:
+            print(i, j)
+        exit(0)
+        x = self.conv1(x, edge_index)
+        x = F.relu(x)
+        x = F.dropout(x)
+
         output = self.act(support), adj
         return output
 
