@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import manifolds
 from layers.att_layers import GraphAttentionLayer
 import layers.hyp_layers as hyp_layers
-from layers.layers import GraphConvolution, Linear, get_dim_act, SAGELayer
+from layers.layers import GraphConvolution, Linear, get_dim_act, SAGELayer, GraphConvolutionTorch
 import utils.math_utils as pmath
 
 
@@ -166,6 +166,23 @@ class GATv2(Encoder):
         self.layers = nn.Sequential(*gat_layers)
         self.encode_graph = True
 
+
+class GCNTorch(Encoder):
+    """
+    Graph Convolution Networks with torch
+    """
+
+    def __init__(self, c, args):
+        super(GCNTorch, self).__init__(c)
+        assert args.num_layers > 0
+        dims, acts = get_dim_act(args)
+        gc_layers = []
+        for i in range(len(dims) - 1):
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            gc_layers.append(GraphConvolutionTorch(in_dim, out_dim, args.dropout, act, args.bias))
+        self.layers = nn.Sequential(*gc_layers)
+        self.encode_graph = True
 
 
 class SAGE(Encoder):

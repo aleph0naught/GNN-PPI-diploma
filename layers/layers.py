@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
-from torch_geometric.nn import SAGEConv
+from torch_geometric.nn import SAGEConv, GCNConv
 
 
 def get_dim_act(args):
@@ -49,6 +49,32 @@ class GraphConvolution(Module):
             support = torch.spmm(adj, hidden)
         else:
             support = torch.mm(adj, hidden)
+        output = self.act(support), adj
+        return output
+
+    def extra_repr(self):
+        return 'input_dim={}, output_dim={}'.format(
+                self.in_features, self.out_features
+        )
+
+
+class GraphConvolutionTorch(Module):
+    """
+    Simple GCN layer with torch
+    """
+
+    def __init__(self, in_features, out_features, dropout, act, use_bias):
+        super(GraphConvolutionTorch, self).__init__()
+        self.dropout = dropout
+        self.gcn = GCNConv(in_features, out_features, bias=use_bias)
+        self.act = act
+        self.in_features = in_features
+        self.out_features = out_features
+
+    def forward(self, input):
+        x, adj = input
+        edge_index = adj.coalesce().indices()
+        x = self.gcn(x, edge_index)
         output = self.act(support), adj
         return output
 
