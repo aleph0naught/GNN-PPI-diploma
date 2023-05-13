@@ -198,7 +198,7 @@ class SAGE(Encoder):
         for i in range(len(dims) - 1):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
-            if i == len(dims) - 2:
+            if i < len(dims) - 2:
                 gc_layers.append(SAGELayer(in_dim, out_dim, args.dropout, act, args.bias))
             else:
                 gc_layers.append(SAGELayer(in_dim, out_dim, args.dropout, act, args.bias, last=True))
