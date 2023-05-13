@@ -75,7 +75,8 @@ class GraphConvolutionTorch(Module):
         x, adj = input
         edge_index = adj.coalesce().indices()
         x = self.gcn(x, edge_index)
-        output = self.act(support), adj
+        x = F.dropout(x, self.dropout, training=self.training)
+        output = self.act(x), adj
         return output
 
     def extra_repr(self):
