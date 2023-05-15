@@ -145,6 +145,8 @@ def load_data_lp(dataset, use_feats, data_path, ppitype, ppimode):
         adj, features = load_citation_data(dataset, use_feats, data_path)[:2]
     elif dataset == 'ppi':
         adj, features = load_ppi_data(data_path, ppitype, ppimode)[:2]
+    elif dataset == 'ppi_test':
+        adj, features = load_ppi_data(data_path, ppitype, ppimode, test=True)[:2]
     elif dataset == 'webkb':
         adj, features = load_webkb_data(dataset,data_path)[:2]
     elif dataset == 'disease_lp':
@@ -269,11 +271,15 @@ def load_data_airport(dataset_str, data_path, return_label=False):
     else:
         return sp.csr_matrix(adj), features
 
-def load_ppi_data(data_path, ppitype, ppimode):
+def load_ppi_data(data_path, ppitype, ppimode, test=False):
     print('features path: {}'.format(data_path+"/features_{}.npy".format(ppitype)))
     print('edges path: {}'.format(data_path+"/{}_{}.txt".format(ppitype,ppimode)))
-    features_ppi=np.load(data_path+"/features_{}.npy".format(ppitype))
-    edges=np.loadtxt(data_path+"/{}_{}.txt".format(ppitype,ppimode))
+    if test:
+        features_ppi=np.load(data_path+"/features_test.npy")
+        edges=np.loadtxt(data_path+"/edges_test.txt")
+    else:
+        features_ppi=np.load(data_path+"/features_{}.npy".format(ppitype))
+        edges=np.loadtxt(data_path+"/{}_{}.txt".format(ppitype,ppimode))
     # labels = np.loadtxt(data_path+"/node2label.txt",delimiter=" ")
     # labels = labels[:,1]
     adj = np.zeros((len(features_ppi), len(features_ppi)))
@@ -284,3 +290,4 @@ def load_ppi_data(data_path, ppitype, ppimode):
     global G
     G = graph
     return sp.csr_matrix(adj), features_ppi
+
