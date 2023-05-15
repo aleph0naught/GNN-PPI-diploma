@@ -69,23 +69,15 @@ class SpGraphAttentionLayer(nn.Module):
         self.alpha = alpha
 
         self.W = nn.Parameter(torch.zeros(size=(in_features, out_features)))
-        nn.init.xavier_normal_(self.W.data, gain=1.414)
+        nn.init.xavier_normal_(self.W.data)
 
         self.a = nn.Parameter(torch.zeros(size=(1, 2 * out_features)))
-        nn.init.xavier_normal_(self.a.data, gain=1.414)
+        nn.init.xavier_normal_(self.a.data)
 
         self.dropout = nn.Dropout(dropout)
         self.leakyrelu = nn.LeakyReLU(self.alpha)
         self.special_spmm = SpecialSpmm()
         self.act = activation
-
-        # self.linear_l = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
-
-        # if share_weights:
-        #     self.linear_r = self.linear_l
-        # else:
-        #     self.linear_r] = nn.Linear(in_features, self.n_hidden * n_heads, bias=False)
-
 
     def forward(self, input, adj):
         N = input.size()[0]
@@ -145,10 +137,10 @@ class SpGraphAttentionV2Layer(nn.Module):
         self.alpha = alpha
 
         self.W = nn.Parameter(torch.zeros(size=(in_features, out_features)))
-        nn.init.xavier_normal_(self.W.data, gain=1.414)
+        nn.init.xavier_normal_(self.W.data)
 
         self.a = nn.Parameter(torch.zeros(size=(1, out_features)))
-        nn.init.xavier_normal_(self.a.data, gain=1.414)
+        nn.init.xavier_normal_(self.a.data)
 
         self.dropout = nn.Dropout(dropout)
         self.leakyrelu = nn.LeakyReLU(self.alpha)
@@ -159,7 +151,7 @@ class SpGraphAttentionV2Layer(nn.Module):
             self.W_r = self.W
         else:
             self.W_r = nn.Parameter(torch.zeros(size=(in_features, out_features)))
-            nn.init.xavier_normal_(self.W.data, gain=1.414)
+            nn.init.xavier_normal_(self.W.data)
 
     def forward(self, input, adj):
         N = input.size()[0]

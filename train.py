@@ -16,6 +16,9 @@ from models.base_models import NCModel, LPModel
 from utils.data_utils import load_data
 from utils.train_utils import get_dir_name, format_metrics
 
+import matplotlib.pyplot as plt
+plt.style.use('seaborn-whitegrid')
+
 
 def train(args):
     np.random.seed(args.seed)
@@ -72,7 +75,7 @@ def train(args):
     lr_scheduler = torch.optim.lr_scheduler.StepLR(
         optimizer,
         step_size=int(args.lr_reduce_freq),
-        gamma=float(args.gamma)
+        gamma=float(args.gamma),
     )
     tot_params = sum([np.prod(p.size()) for p in model.parameters()])
     logging.info(f"Total number of parameters: {tot_params}")
@@ -88,6 +91,17 @@ def train(args):
     best_val_metrics = model.init_metric_dict()
     best_test_metrics = None
     best_emb = None
+    val_plot = {
+        'loss': [],
+        'roc': [],
+        'ap': [],
+    }
+    train_plot = {
+        'loss': [],
+        'roc': [],
+        'ap': [],
+    }
+    plot_epochs = []
     for epoch in range(args.epochs):
         t = time.time()
         model.train()
@@ -106,16 +120,21 @@ def train(args):
         lr_scheduler.step()
         if (epoch + 1) % args.log_freq == 0:
             logging.info(" ".join(['Epoch: {:04d}'.format(epoch + 1),
-                                   'lr: {}'.format(lr_scheduler.get_lr()[0]),
+                                   'lr: {}'.format(lr_scheduler.get_last_lr()[0]),
                                    format_metrics(train_metrics, 'train'),
                                    'time: {:.4f}s'.format(time.time() - t)
-                                   ]))
+                                    ]))
         if (epoch + 1) % args.eval_freq == 0:
             model.eval()
             embeddings = model.encode(data['features'], data['adj_train_norm'])
             embeddings = embeddings.clamp(0, 1)
             embeddings[embeddings != embeddings] = 0
             val_metrics = model.compute_metrics(embeddings, data, 'val')
+            for metric_name, value in val_metrics.items():
+                val_plot[metric_name].append(value)
+            for metric_name, value in train_metrics.items():
+                train_plot[metric_name].append(value)
+            plot_epochs.append(epoch + 1)
             if (epoch + 1) % args.log_freq == 0:
                 logging.info(" ".join(['Epoch: {:04d}'.format(epoch + 1), format_metrics(val_metrics, 'val')]))
             if model.has_improved(best_val_metrics, val_metrics):
@@ -130,6 +149,13 @@ def train(args):
                 if counter == args.patience and epoch > args.min_epochs:
                     logging.info("Early stopping")
                     break
+    
+    fig = plt.figure()
+    ax = plt.axes()
+    ax.plot(plot_epochs, val_plot['roc'], label='Validation')
+    ax.plot(plot_epochs, train_plot['roc'], label='Train')
+    ax.set(xlabel='epoch', ylabel='ROC-AUC', title='ROC-AUC {} {} {}'.format(args.model, args.ppitype, args.ppimode))
+    fig.savefig('./plots/val_roc_auc_{}_{}_{}'.format(args.model, args.ppitype, args.ppimode))
 
     logging.info("Optimization Finished!")
     logging.info("Total time elapsed: {:.4f}s".format(time.time() - t_total))

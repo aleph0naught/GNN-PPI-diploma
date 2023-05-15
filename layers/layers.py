@@ -4,10 +4,13 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
 from torch_geometric.nn import SAGEConv, GCNConv
+
+import numpy as np
 
 
 def get_dim_act(args):
@@ -67,16 +70,17 @@ class GraphConvolutionTorch(Module):
         super(GraphConvolutionTorch, self).__init__()
         self.dropout = dropout
         self.gcn = GCNConv(in_features, out_features, bias=use_bias)
+        torch.nn.init.xavier_uniform(self.gcn.lin.weight)
         self.act = act
         self.in_features = in_features
         self.out_features = out_features
 
     def forward(self, input):
         x, adj = input
-        edge_index = adj.coalesce().indices()
-        x = self.gcn(x, edge_index)
-        x = F.dropout(x, self.dropout, training=self.training)
-        output = self.act(x), adj
+        if not hasattr(self, 'edge_index'):
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.get_device())
+        support = self.gcn(x, self.edge_index)
+        output = self.act(support), adj
         return output
 
     def extra_repr(self):
@@ -129,13 +133,16 @@ class SAGELayer(nn.Module):
         self.dropout = dropout
         self.last = last
         self.conv = SAGEConv(in_features, out_features, bias=bias)
+        torch.nn.init.xavier_uniform(self.conv.lin_l.weight)
+        torch.nn.init.xavier_uniform(self.conv.lin_r.weight)
 
     def forward(self, input):
         x, adj = input
-        edge_index = adj.coalesce().indices()
-        x = self.conv(x, edge_index)
+        if not hasattr(self, 'edge_index'):
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.get_device())
+        x = self.conv(x, self.edge_index)
         if not self.last:
-            output = F.dropout(self.act(x), self.dropout, training=self.training), adj
+            output = self.act(x), adj
         else:
             output = x, adj
         return output

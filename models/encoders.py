@@ -201,6 +201,7 @@ class SAGE(Encoder):
             if i < len(dims) - 2:
                 gc_layers.append(SAGELayer(in_dim, out_dim, args.dropout, act, args.bias))
             else:
+                print('Done')
                 gc_layers.append(SAGELayer(in_dim, out_dim, args.dropout, act, args.bias, last=True))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
