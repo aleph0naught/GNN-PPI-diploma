@@ -8,7 +8,7 @@ import torch.nn.functional as F
 import manifolds
 from layers.att_layers import GraphAttentionLayer
 import layers.hyp_layers as hyp_layers
-from layers.layers import GraphConvolution, Linear, get_dim_act, SAGELayer, GraphConvolutionTorch
+from layers.layers import GraphConvolution, Linear, get_dim_act, SAGELayer, GraphConvolutionTorch, GATLayerTorch, GATv2LayerTorch
 import utils.math_utils as pmath
 
 
@@ -181,6 +181,42 @@ class GCNTorch(Encoder):
             in_dim, out_dim = dims[i], dims[i + 1]
             act = acts[i]
             gc_layers.append(GraphConvolutionTorch(in_dim, out_dim, args.dropout, act, args.bias))
+        self.layers = nn.Sequential(*gc_layers)
+        self.encode_graph = True
+
+
+class GATTorch(Encoder):
+    """
+    Graph Attention Networks with torch
+    """
+
+    def __init__(self, c, args):
+        super(GATTorch, self).__init__(c)
+        assert args.num_layers > 0
+        dims, acts = get_dim_act(args)
+        gc_layers = []
+        for i in range(len(dims) - 1):
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            gc_layers.append(GATLayerTorch(in_dim, out_dim, args.dropout, act, args.bias))
+        self.layers = nn.Sequential(*gc_layers)
+        self.encode_graph = True
+
+
+class GATv2Torch(Encoder):
+    """
+    Graph Attention Networks with torch
+    """
+
+    def __init__(self, c, args):
+        super(GATTorch, self).__init__(c)
+        assert args.num_layers > 0
+        dims, acts = get_dim_act(args)
+        gc_layers = []
+        for i in range(len(dims) - 1):
+            in_dim, out_dim = dims[i], dims[i + 1]
+            act = acts[i]
+            gc_layers.append(GATv2LayerTorch(in_dim, out_dim, args.dropout, act, args.bias))
         self.layers = nn.Sequential(*gc_layers)
         self.encode_graph = True
 

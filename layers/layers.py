@@ -8,7 +8,7 @@ import torch.nn.init as init
 from torch.nn.modules.module import Module
 from torch.nn.parameter import Parameter
 
-from torch_geometric.nn import SAGEConv, GCNConv
+from torch_geometric.nn import SAGEConv, GCNConv, GATConv, GATv2Conv
 
 import numpy as np
 
@@ -87,6 +87,65 @@ class GraphConvolutionTorch(Module):
         return 'input_dim={}, output_dim={}'.format(
                 self.in_features, self.out_features
         )
+
+
+class GATLayerTorch(Module):
+    """
+    Simple GAT layer with torch
+    """
+
+    def __init__(self, in_features, out_features, dropout, act, use_bias):
+        super(GATLayerTorch, self).__init__()
+        self.dropout = dropout
+        self.conv = GATConv(in_features, out_features, bias=use_bias)
+        torch.nn.init.xavier_uniform(self.conv.lin_src.weight)
+        torch.nn.init.xavier_uniform(self.conv.lin_dst.weight)
+        self.act = act
+        self.in_features = in_features
+        self.out_features = out_features
+
+    def forward(self, input):
+        x, adj = input
+        if not hasattr(self, 'edge_index'):
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
+        support = self.conv(x, self.edge_index)
+        output = self.act(support), adj
+        return output
+
+    def extra_repr(self):
+        return 'input_dim={}, output_dim={}'.format(
+                self.in_features, self.out_features
+        )
+
+
+class GATv2LayerTorch(Module):
+    """
+    Simple GATv2 layer with torch
+    """
+
+    def __init__(self, in_features, out_features, dropout, act, use_bias):
+        super(GATLayerTorch, self).__init__()
+        self.dropout = dropout
+        self.conv = GATv2Conv(in_features, out_features, bias=use_bias)
+        torch.nn.init.xavier_uniform(self.conv.lin_r.weight)
+        torch.nn.init.xavier_uniform(self.conv.lin_l.weight)
+        self.act = act
+        self.in_features = in_features
+        self.out_features = out_features
+
+    def forward(self, input):
+        x, adj = input
+        if not hasattr(self, 'edge_index'):
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
+        support = self.conv(x, self.edge_index)
+        output = self.act(support), adj
+        return output
+
+    def extra_repr(self):
+        return 'input_dim={}, output_dim={}'.format(
+                self.in_features, self.out_features
+        )
+
 
 
 class Linear(Module):
