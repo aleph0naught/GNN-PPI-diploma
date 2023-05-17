@@ -7,6 +7,7 @@ import logging
 import os
 import pickle
 import time
+import gc
 
 import numpy as np
 import optimizers
@@ -155,6 +156,7 @@ def train(args):
     ax.plot(plot_epochs, val_plot['roc'], label='Validation')
     ax.plot(plot_epochs, train_plot['roc'], label='Train')
     ax.set(xlabel='epoch', ylabel='ROC-AUC', title='ROC-AUC {} {} {}'.format(args.model, args.ppitype, args.ppimode))
+    ax.legend()
     fig.savefig('./plots/val_roc_auc_{}_{}_{}'.format(args.model, args.ppitype, args.ppimode))
 
     logging.info("Optimization Finished!")
@@ -175,6 +177,10 @@ def train(args):
         json.dump(vars(args), open(os.path.join(save_dir, 'config.json'), 'w'))
         torch.save(model.state_dict(), os.path.join(save_dir, 'model.pth'))
         logging.info(f"Saved model in {save_dir}")
+    model.cpu()
+    del model
+    gc.collect()
+    torch.cuda.empty_cache()
 
 if __name__ == '__main__':
     args = parser.parse_args()

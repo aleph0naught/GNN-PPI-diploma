@@ -78,7 +78,7 @@ class GraphConvolutionTorch(Module):
     def forward(self, input):
         x, adj = input
         if not hasattr(self, 'edge_index'):
-            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.get_device())
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
         support = self.gcn(x, self.edge_index)
         output = self.act(support), adj
         return output
@@ -139,7 +139,7 @@ class SAGELayer(nn.Module):
     def forward(self, input):
         x, adj = input
         if not hasattr(self, 'edge_index'):
-            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.get_device())
+            self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
         x = self.conv(x, self.edge_index)
         if not self.last:
             output = self.act(x), adj

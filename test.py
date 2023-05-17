@@ -42,13 +42,14 @@ def test(args):
             if torch.is_tensor(data[x]):
                 data[x] = data[x].to(args.device)
     path = input("input model path: ")
-    model.load_state_dict(torch.load(path))
+    model.load_state_dict(torch.load(path, map_location=torch.device(args.device)))
     model.eval()
 
     embeddings = model.encode(data['features'], data['adj_train_norm'])
-    pos_scores = model.decode(embeddings, data['train_edges'])
+    print(data['adj_train_norm'].to_dense())
+    pos_scores = model.decode(embeddings, data['train_edges_false'])
     print('Embeddings: ', embeddings)
-    print(data['train_edges'])
+    print(data['train_edges_false'])
     print('Score: ', pos_scores)
 
 if __name__ == '__main__':
