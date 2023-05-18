@@ -209,7 +209,7 @@ class GATv2Torch(Encoder):
     """
 
     def __init__(self, c, args):
-        super(GATTorch, self).__init__(c)
+        super(GATv2Torch, self).__init__(c)
         assert args.num_layers > 0
         dims, acts = get_dim_act(args)
         gc_layers = []
