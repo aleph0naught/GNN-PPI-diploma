@@ -158,6 +158,14 @@ def train(args):
     ax.set(xlabel='epoch', ylabel='ROC-AUC', title='ROC-AUC {} {} {}'.format(args.model, args.ppitype, args.ppimode))
     ax.legend()
     fig.savefig('./plots/val_roc_auc_{}_{}_{}'.format(args.model, args.ppitype, args.ppimode))
+    
+    fig = plt.figure()
+    ax = plt.axes()
+    ax.plot(plot_epochs, val_plot['ap'], label='Validation')
+    ax.plot(plot_epochs, train_plot['ap'], label='Train')
+    ax.set(xlabel='epoch', ylabel='AP', title='Average Precision {} {} {}'.format(args.model, args.ppitype, args.ppimode))
+    ax.legend()
+    fig.savefig('./plots/val_ap_{}_{}_{}'.format(args.model, args.ppitype, args.ppimode))
 
     logging.info("Optimization Finished!")
     logging.info("Total time elapsed: {:.4f}s".format(time.time() - t_total))
