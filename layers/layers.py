@@ -94,8 +94,9 @@ class GATLayerTorch(Module):
     Simple GAT layer with torch
     """
 
-    def __init__(self, in_features, out_features, dropout, act, use_bias):
+    def __init__(self, in_features, out_features, dropout, act, use_bias, last=False):
         super(GATLayerTorch, self).__init__()
+        self.last = last
         self.dropout = dropout
         self.conv = GATConv(in_features, out_features, bias=use_bias)
         torch.nn.init.xavier_uniform(self.conv.lin_src.weight)
@@ -109,7 +110,11 @@ class GATLayerTorch(Module):
         if not hasattr(self, 'edge_index'):
             self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
         support = self.conv(x, self.edge_index)
-        output = self.act(support), adj
+        if not self.last:
+            hidden = F.dropout(support, self.dropout, training=self.training)
+            output = self.act(hidden), adj
+        else:
+            output = support, adj
         return output
 
     def extra_repr(self):
@@ -123,8 +128,9 @@ class GATv2LayerTorch(Module):
     Simple GATv2 layer with torch
     """
 
-    def __init__(self, in_features, out_features, dropout, act, use_bias):
+    def __init__(self, in_features, out_features, dropout, act, use_bias, last=False):
         super(GATv2LayerTorch, self).__init__()
+        self.last = last
         self.dropout = dropout
         self.conv = GATv2Conv(in_features, out_features, bias=use_bias)
         torch.nn.init.xavier_uniform(self.conv.lin_r.weight)
@@ -138,7 +144,11 @@ class GATv2LayerTorch(Module):
         if not hasattr(self, 'edge_index'):
             self.edge_index = torch.Tensor(np.stack(np.where(adj.detach().cpu().to_dense()))).to(dtype=torch.long, device=x.device)
         support = self.conv(x, self.edge_index)
-        output = self.act(support), adj
+        if not self.last:
+            hidden = F.dropout(support, self.dropout, training=self.training)
+            output = self.act(hidden), adj
+        else:
+            output = support, adj
         return output
 
     def extra_repr(self):
