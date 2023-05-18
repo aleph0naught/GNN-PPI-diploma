@@ -124,7 +124,7 @@ class GATv2LayerTorch(Module):
     """
 
     def __init__(self, in_features, out_features, dropout, act, use_bias):
-        super(GATLayerTorch, self).__init__()
+        super(GATv2LayerTorch, self).__init__()
         self.dropout = dropout
         self.conv = GATv2Conv(in_features, out_features, bias=use_bias)
         torch.nn.init.xavier_uniform(self.conv.lin_r.weight)
